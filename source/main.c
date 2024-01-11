@@ -99,7 +99,7 @@ typedef struct
 {
     float speed;
 } SpeedConfiguration;
-
+bool ini_exists;
 static int SpeedHandler(void* user, const char* section, const char* name,
                    const char* value)
 {
@@ -122,18 +122,19 @@ HOOK_INIT(GameRestart);
 void GameRestart_hook(void* thisGame, bool restart) {
     HOOK_CONTINUE(GameRestart, void (*)(void*, bool), thisGame, restart);
     SpeedConfiguration SpeedConfig;
-    float speed = 1.0;
+    float speed = 1.00;
 
     //read ini
     if (ini_parse(PLUGIN_CONFIG_PATH, SpeedHandler, &SpeedConfig) < 0) {
         final_printf("Can't load 'RB4DX.ini'\n");
     }
 
-    if (SpeedConfig.speed == 0.0)
-        SpeedConfig.speed = 1.0;
-    speed = SpeedConfig.speed;
+    if (SpeedConfig.speed == 0.00)
+        SpeedConfig.speed = 1.00;
+    if (ini_exists)
+        speed = SpeedConfig.speed;
 
-    if (speed > 0.0 && speed != 1.0){
+    if (speed > 0.00 && speed != 1.00){
         SetMusicSpeed(thisGame, speed);
         final_printf("Music speed: %.2f\n", speed);
         DoNotification("Music Speed Set: %.2f", speed);
@@ -163,6 +164,8 @@ int32_t attr_public module_start(size_t argc, const void *args)
         final_printf("Game loaded is not Rock Band 4!\n");
         return 0;
     }
+
+    ini_exists = file_exists(PLUGIN_CONFIG_PATH);
 
     final_printf("Applying RB4DX hooks...\n");
     DoNotificationStatic("RB4DX Plugin loaded!");
