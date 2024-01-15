@@ -13,7 +13,8 @@
 #define attr_public __attribute__((visibility("default")))
 
 #define GOLDHEN_PATH "/data/GoldHEN"
-#define PLUGIN_CONFIG_PATH GOLDHEN_PATH "/RB4DX.ini"
+#define RB4DX_PATH GOLDHEN_PATH "/RB4DX"
+#define PLUGIN_CONFIG_PATH RB4DX_PATH "/RB4DX.ini"
 #define PLUGIN_NAME "RB4DX"
 #define final_printf(a, args...) klog("[" PLUGIN_NAME "] " a, ##args)
 
@@ -58,8 +59,8 @@ bool file_exists(const char* filename) {
 static struct proc_info procInfo;
 
 // ARKless file loading hook
-const char* RawfilesFolderUS = "/data/GoldHEN/AFR/CUSA02084/";
-const char* RawfilesFolderEU = "/data/GoldHEN/AFR/CUSA02901/";
+const char* RawfilesFolder = "/data/GoldHEN/RB4DX/";
+const char* GameRawfilesFolder = "data:/GoldHEN/RB4DX/";
 bool USTitleID = true;
 bool PrintRawfiles = true;
 bool PrintArkfiles = false;
@@ -75,18 +76,18 @@ void* (*NewFile)(const char*, FileMode);
 HOOK_INIT(NewFile);
 void NewFile_hook(const char* path, FileMode mode) {
     char rawpath[256];
-    if (USTitleID)
-        strcpy(rawpath, RawfilesFolderUS);
-    else
-        strcpy(rawpath, RawfilesFolderEU);
+    strcpy(rawpath, RawfilesFolder);
     /*if (rawpath[strlen(rawpath) - 1] != '/') {
         strcat(rawpath, "/");
     }*/
     strcat(rawpath, path);
+    char gamepath[256];
+    strcpy(gamepath, GameRawfilesFolder);
+    strcat(gamepath, path);
     const char* newpath = rawpath;
     if (file_exists(newpath)) {
         if (PrintRawfiles) final_printf("Loading rawfile: %s\n", newpath);
-        HOOK_CONTINUE(NewFile, void (*)(const char*, FileMode), path, kReadNoArk);
+        HOOK_CONTINUE(NewFile, void (*)(const char*, FileMode), gamepath, kReadNoArk);
         return;
     }
     if (PrintArkfiles || (PrintRawfiles && mode == kReadNoArk)) final_printf("Loading file: %s\n", path);
@@ -164,16 +165,16 @@ int32_t attr_public module_start(size_t argc, const void *args)
         final_printf("Game loaded is not Rock Band 4!\n");
         return 0;
     }
-
-    ini_exists = file_exists(PLUGIN_CONFIG_PATH);
-
-    final_printf("Applying RB4DX hooks...\n");
-    DoNotificationStatic("RB4DX Plugin loaded!");
     
     if (strcmp(procInfo.version, "02.21") != 0) {
         final_printf("This plugin is only compatible with version 02.21 of Rock Band 4.\n");
         return 0;
     }
+
+    ini_exists = file_exists(PLUGIN_CONFIG_PATH);
+
+    final_printf("Applying RB4DX hooks...\n");
+    DoNotificationStatic("RB4DX Plugin loaded!");
 
     //configuration GameConfig; //TODO: implement game configuration
     
