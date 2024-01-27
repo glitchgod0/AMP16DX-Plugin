@@ -6,7 +6,7 @@ TARGETSTUB   := $(OUTPUT_PRX).so
 O_FLAG       := -O3
 
 # Libraries linked into the ELF.
-LIBS := -lGoldHEN_Hook -lkernel -lSceLibcInternal -lSceSysmodule
+LIBS := -lGoldHEN_Hook -lkernel -lSceLibcInternal -lSceSysmodule -lScePad
 
 EXTRAFLAGS := -D__USE_KLOG__ -D__FINAL__=1
 

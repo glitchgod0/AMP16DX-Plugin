@@ -21,6 +21,7 @@
 #include <GoldHEN/Common.h>
 #include <orbis/libkernel.h>
 #include <orbis/Sysmodule.h>
+#include <orbis/Pad.h>
 #include "ini.h"
 
 attr_public const char *g_pluginName = PLUGIN_NAME;
@@ -143,6 +144,43 @@ void GameRestart_hook(void* thisGame, bool restart) {
     return;
 }
 
+//TODDO: force the readfile function to look for text format instead of binary
+
+//void(*datareadfile)(long, const char*, bool);
+//
+//hook_init(datareadfile);
+//
+//void datareadfile_hook(long l, const char* filename, bool b){
+//    final_printf("attempting to read dta %s\n", filename);
+//    if (strcmp(filename, "dx/ui/dx_init.dta") == 0) {
+//        final_printf("dx.dta read detected!\n");
+//        final_printf("long = %ld\n", l);
+//        final_printf("bool = %d\n", b);
+//        hook_continue(datareadfile, void(*)(long, const char*, bool), l, filename, 0);
+//        //if (b == 1)
+//        //    hook_continue(datareadfile, void(*)(const char*, bool), filename, 0);
+//        //else
+//        //    hook_continue(datareadfile, void(*)(const char*, bool), filename, 1);
+//    } else
+//        hook_continue(datareadfile, void(*)(long, const char*, bool), l, filename, b);
+//    return;
+//}
+
+//read lightbar status
+
+int(*TscePadSetLightBar)(int handle, OrbisPadColor *inputColor);
+
+HOOK_INIT(TscePadSetLightBar);
+
+void TscePadSetLightBar_hook(int handle, OrbisPadColor *inputColor) {
+    //final_printf("Set Light Bar Color:\n"); //disabled due to log spam
+    //final_printf("R: %d\n", inputColor->r);
+    //final_printf("G: %d\n", inputColor->g);
+    //final_printf("B: %d\n", inputColor->b);
+    scePadSetLightBar(handle, inputColor);
+    return;
+}
+
 #define ADDR_OFFSET 0x00400000
 int32_t attr_public module_start(size_t argc, const void *args)
 {
@@ -177,14 +215,18 @@ int32_t attr_public module_start(size_t argc, const void *args)
     DoNotificationStatic("RB4DX Plugin loaded!");
 
     //configuration GameConfig; //TODO: implement game configuration
-    
+
+    //DataReadFile = (void*)(procInfo.base_address + 0x002205e0);
     NewFile = (void*)(procInfo.base_address + 0x00376d40);
     GameRestart = (void*)(procInfo.base_address + 0x0a46710);
     SetMusicSpeed = (void*)(procInfo.base_address + 0x00a470e0);
+    TscePadSetLightBar = (void*)(procInfo.base_address + 0x012450d0);
 
     // apply all hooks
     HOOK(GameRestart);
     HOOK(NewFile);
+    HOOK(TscePadSetLightBar);
+    //HOOK(DataReadFile);
 
     return 0;
 }
@@ -195,5 +237,7 @@ int32_t attr_public module_stop(size_t argc, const void *args)
     // unhook everything just in case
     UNHOOK(GameRestart);
     UNHOOK(NewFile);
+    UNHOOK(TscePadSetLightBar);
+    //UNHOOK(DataReadFile);
     return 0;
 }
