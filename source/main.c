@@ -29,16 +29,63 @@ attr_public const char *g_pluginDesc = "Plugin for loading Rock Band 4 Deluxe fi
 attr_public const char *g_pluginAuth = "LysiX";
 attr_public uint32_t g_pluginVersion = 0x00000100; // 1.00
 
+//notification ini reader
+typedef struct
+{
+    bool NotifyColored;
+} NotifyConfiguration;
+bool ini_exists;
+static int NotifyHandler(void* user, const char* section, const char* name,
+    const char* value)
+{
+    NotifyConfiguration* pconfig = (NotifyConfiguration*)user;
+
+#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    if (MATCH("Settings", "NotifyColored")) {
+        if (strcmp(value, "true") == 0) {
+            pconfig->NotifyColored = true;
+        }
+        else {
+            pconfig->NotifyColored = false;
+        }
+    }
+    else {
+        return 0;  /* unknown section/name, error */
+    }
+    return 1;
+}
+
 void DoNotificationStatic(const char* text) {
+    NotifyConfiguration NotifyConfig;
+    bool NotifyColored = false;
+    //read ini for notify color
+    if (ini_parse(PLUGIN_CONFIG_PATH, NotifyHandler, &NotifyConfig) < 0) {
+        final_printf("Can't load 'RB4DX.ini'\n");
+    }
+    if (ini_exists) {
+        NotifyColored = NotifyConfig.NotifyColored;
+    }
     OrbisNotificationRequest Buffer = { 0 };
     Buffer.useIconImageUri = 1;
     Buffer.targetId = -1;
     strcpy(Buffer.message, text);
-    strcpy(Buffer.iconUri, "cxml://psnotification/tex_icon_system");
+    if (NotifyColored)
+        strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/rock-band-3-deluxe/100069d1c2293424a659ecb4a5ddacc3b91c4f9b/dependencies/media/dx.png");
+    else
+        strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/RB2DX-Site/7d707e0d8e6f1c47c9e1eb187237ad934f254f92/docs/apple-touch-icon.png");
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
 void DoNotification(const char *FMT, ...) {
+    NotifyConfiguration NotifyConfig;
+    bool NotifyColored = false;
+    //read ini for notify color
+    if (ini_parse(PLUGIN_CONFIG_PATH, NotifyHandler, &NotifyConfig) < 0) {
+        final_printf("Can't load 'RB4DX.ini'\n");
+    }
+    if (ini_exists) {
+        NotifyColored = NotifyConfig.NotifyColored;
+    }
     OrbisNotificationRequest Buffer = { 0 };
     va_list args;
     va_start(args, FMT);
@@ -48,13 +95,61 @@ void DoNotification(const char *FMT, ...) {
     Buffer.unk3 = 0;
     Buffer.useIconImageUri = 1;
     Buffer.targetId = -1;
-    strcpy(Buffer.iconUri, "cxml://psnotification/tex_icon_system");
+    if (NotifyColored)
+        strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/rock-band-3-deluxe/100069d1c2293424a659ecb4a5ddacc3b91c4f9b/dependencies/media/dx.png");
+    else
+        strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/RB2DX-Site/7d707e0d8e6f1c47c9e1eb187237ad934f254f92/docs/apple-touch-icon.png");
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
 bool file_exists(const char* filename) {
     struct stat buff;
     return stat(filename, &buff) == 0 ? true : false;
+}
+
+//speedhack ini reader
+typedef struct
+{
+    float speed;
+} SpeedConfiguration;
+static int SpeedHandler(void* user, const char* section, const char* name,
+    const char* value)
+{
+    SpeedConfiguration* pconfig = (SpeedConfiguration*)user;
+
+#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    if (MATCH("Settings", "SongSpeedMultiplier")) {
+        pconfig->speed = atof(value);
+    }
+    else {
+        return 0;  /* unknown section/name, error */
+    }
+    return 1;
+}
+
+//autoplay ini reader
+typedef struct
+{
+    bool autoplay;
+} AutoplayConfiguration;
+static int AutoplayHandler(void* user, const char* section, const char* name,
+    const char* value)
+{
+    AutoplayConfiguration* pconfig = (AutoplayConfiguration*)user;
+
+#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    if (MATCH("Settings", "Autoplay")) {
+        if (strcmp(value, "true") == 0) {
+            pconfig->autoplay = true;
+        }
+        else {
+            pconfig->autoplay = false;
+        }
+    }
+    else {
+        return 0;  /* unknown section/name, error */
+    }
+    return 1;
 }
 
 static struct proc_info procInfo;
@@ -65,6 +160,7 @@ const char* GameRawfilesFolder = "data:/GoldHEN/RB4DX/";
 bool USTitleID = true;
 bool PrintRawfiles = true;
 bool PrintArkfiles = false;
+
 typedef enum {
     kRead = 0x0,
     kReadNoArk = 0x1,
@@ -73,8 +169,11 @@ typedef enum {
     kWrite = 0x4,
     kWriteNoBuffer = 0x5
 } FileMode;
+
 void* (*NewFile)(const char*, FileMode);
+
 HOOK_INIT(NewFile);
+
 void NewFile_hook(const char* path, FileMode mode) {
     char rawpath[256];
     strcpy(rawpath, RawfilesFolder);
@@ -97,25 +196,6 @@ void NewFile_hook(const char* path, FileMode mode) {
 }
 
 //speed hack
-typedef struct
-{
-    float speed;
-} SpeedConfiguration;
-bool ini_exists;
-static int SpeedHandler(void* user, const char* section, const char* name,
-                   const char* value)
-{
-    SpeedConfiguration* pconfig = (SpeedConfiguration*)user;
-
-    #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-    if (MATCH("Settings", "SongSpeedMultiplier")) {
-        pconfig->speed = atof(value);
-    } else {
-        return 0;  /* unknown section/name, error */
-    }
-    return 1;
-}
-
 void(*GameRestart)(void*, bool);
 void(*SetMusicSpeed)(void*, float);
 
@@ -125,22 +205,79 @@ void GameRestart_hook(void* thisGame, bool restart) {
     HOOK_CONTINUE(GameRestart, void (*)(void*, bool), thisGame, restart);
     SpeedConfiguration SpeedConfig;
     float speed = 1.00;
+    AutoplayConfiguration AutoplayConfig;
+    bool autoplay = false;
 
-    //read ini
+    //read ini for autoplay
+    if (ini_parse(PLUGIN_CONFIG_PATH, AutoplayHandler, &AutoplayConfig) < 0) {
+        final_printf("Can't load 'RB4DX.ini'\n");
+    }
+
+    //read ini for speedhack
     if (ini_parse(PLUGIN_CONFIG_PATH, SpeedHandler, &SpeedConfig) < 0) {
         final_printf("Can't load 'RB4DX.ini'\n");
     }
 
     if (SpeedConfig.speed == 0.00)
         SpeedConfig.speed = 1.00;
-    if (ini_exists)
+    if (ini_exists) {
         speed = SpeedConfig.speed;
+        autoplay = AutoplayConfig.autoplay;
+    }
 
     if (speed > 0.00 && speed != 1.00){
         SetMusicSpeed(thisGame, speed);
         final_printf("Music speed: %.2f\n", speed);
         DoNotification("Music Speed Set: %.2f", speed);
     }
+    if (autoplay) {
+        final_printf("Autoplay Enabled!\n");
+        DoNotificationStatic("Autoplay Enabled!");
+    }
+    return;
+}
+
+//autoplay hack
+void(*SetGameOver)(void*, bool);
+
+HOOK_INIT(SetGameOver);
+
+void SetGameOver_hook(void* thisGame,  bool won) {
+    AutoplayConfiguration AutoplayConfig;
+    bool autoplay = false;
+
+    //read ini for autoplay
+    if (ini_parse(PLUGIN_CONFIG_PATH, AutoplayHandler, &AutoplayConfig) < 0) {
+        final_printf("Can't load 'RB4DX.ini'\n");
+    }
+
+    if (ini_exists)
+        autoplay = AutoplayConfig.autoplay;
+
+    if (autoplay)
+        //no winning for you, cheater
+        HOOK_CONTINUE(SetGameOver, bool (*)(void*, bool), thisGame, false);
+    else
+        HOOK_CONTINUE(SetGameOver, bool (*)(void*, bool), thisGame, won);
+    return;
+}
+
+void(*SetCheating)(void*, bool);
+HOOK_INIT(SetCheating);
+
+void SetCheating_hook(void* thisTrackWatcher, bool cheating) {
+    AutoplayConfiguration AutoplayConfig;
+    bool autoplay = false;
+
+    //read ini for autoplay
+        if (ini_parse(PLUGIN_CONFIG_PATH, AutoplayHandler, &AutoplayConfig) < 0) {
+            final_printf("Can't load 'RB4DX.ini'\n");
+        }
+
+    if (ini_exists)
+        autoplay = AutoplayConfig.autoplay;
+
+    HOOK_CONTINUE(SetCheating, void (*)(void*, bool), thisTrackWatcher, autoplay);
     return;
 }
 
@@ -218,12 +355,16 @@ int32_t attr_public module_start(size_t argc, const void *args)
 
     //DataReadFile = (void*)(procInfo.base_address + 0x002205e0);
     NewFile = (void*)(procInfo.base_address + 0x00376d40);
-    GameRestart = (void*)(procInfo.base_address + 0x0a46710);
+    GameRestart = (void*)(procInfo.base_address + 0x00a46710);
     SetMusicSpeed = (void*)(procInfo.base_address + 0x00a470e0);
+    SetGameOver = (void*)(procInfo.base_address + 0x00a48790);
+    SetCheating = (void*)(procInfo.base_address + 0x0122dfc0);
     TscePadSetLightBar = (void*)(procInfo.base_address + 0x012450d0);
 
     // apply all hooks
     HOOK(GameRestart);
+    HOOK(SetGameOver);
+    HOOK(SetCheating);
     HOOK(NewFile);
     HOOK(TscePadSetLightBar);
     //HOOK(DataReadFile);
@@ -236,6 +377,8 @@ int32_t attr_public module_stop(size_t argc, const void *args)
     final_printf("Stopping plugin...\n");
     // unhook everything just in case
     UNHOOK(GameRestart);
+    UNHOOK(SetGameOver);
+    UNHOOK(SetCheating);
     UNHOOK(NewFile);
     UNHOOK(TscePadSetLightBar);
     //UNHOOK(DataReadFile);
