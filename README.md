@@ -3,7 +3,15 @@ GoldHEN Plugin used for loading AMP16DX flies, heavily based on RB4DX-Plugin (1.
 
 ## Usage
 
-Put processed files into `/data/GoldHEN/AMP16DX/ps4`
+* Put this code at the bottom of `plugins.ini`
+```ini
+; Amplitude Deluxe Plugin
+[CUSA02480]
+/data/GoldHEN/plugins/AMPDX-Plugin.prx
+```
+
+* Put processed files into `/data/GoldHEN/AMP16DX/ps4`
+
 
 ## Building
 
