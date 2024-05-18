@@ -13,20 +13,20 @@
 #define attr_public __attribute__((visibility("default")))
 
 #define GOLDHEN_PATH "/data/GoldHEN"
-#define RB4DX_PATH GOLDHEN_PATH "/RB4DBG"
-#define PLUGIN_CONFIG_PATH RB4DX_PATH "/RB4DBG.ini"
-#define PLUGIN_NAME "RB4DBG"
+#define RB4DX_PATH GOLDHEN_PATH "/AMP16DX"
+#define PLUGIN_CONFIG_PATH RB4DX_PATH "/AMP16DX.ini"
+#define PLUGIN_NAME "AMP16DX"
 #define final_printf(a, args...) klog("[" PLUGIN_NAME "] " a, ##args)
 
-#include <GoldHEN/Common.h>
+#include <Common.h>
 #include <orbis/libkernel.h>
 #include <orbis/Sysmodule.h>
 #include <orbis/Pad.h>
 #include "ini.h"
 
 attr_public const char *g_pluginName = PLUGIN_NAME;
-attr_public const char *g_pluginDesc = "Plugin for loading Rock Band 4 Debug files, among other enhancements.";
-attr_public const char *g_pluginAuth = "LysiX";
+attr_public const char *g_pluginDesc = "Plugin for loading AMP16DX files, among other enhancements.";
+attr_public const char *g_pluginAuth = "LysiX, glitchgod";
 attr_public uint32_t g_pluginVersion = 0x00000100; // 1.00
 
 void DoNotificationStatic(const char* text) {
@@ -60,8 +60,8 @@ bool file_exists(const char* filename) {
 static struct proc_info procInfo;
 
 // ARKless file loading hook
-const char* RawfilesFolder = "/data/GoldHEN/RB4DBG/";
-const char* GameRawfilesFolder = "data:/GoldHEN/RB4DBG/";
+const char* RawfilesFolder = "/data/GoldHEN/AMP16DX/";
+const char* GameRawfilesFolder = "data:/GoldHEN/AMP16DX/";
 bool USTitleID = true;
 bool PrintRawfiles = true;
 bool PrintArkfiles = false;
@@ -100,34 +100,30 @@ void NewFile_hook(const char* path, FileMode mode) {
 int32_t attr_public module_start(size_t argc, const void *args)
 {
     if (sys_sdk_proc_info(&procInfo) != 0) {
-        final_printf("Failed to get process info!\n");
+        DoNotificationStatic("Failed to get process info!");
         return 0;
     }
 
     sys_sdk_proc_info(&procInfo);
     final_printf("Started plugin! Title ID: %s\n", procInfo.titleid);
-    if (strcmp(procInfo.titleid, "CUSA02084") == 0) {
-        final_printf("US Rock Band 4 Detected!\n");
+    if (strcmp(procInfo.titleid, "CUSA02480") == 0) {
+        DoNotificationStatic("US Amp16 Detected!");
         USTitleID = true;
     }
-    else if (strcmp(procInfo.titleid, "CUSA02901") == 0) {
-        final_printf("EU Rock Band 4 Detected!\n");
-        USTitleID = false;
-    }
     else {
-        final_printf("Game loaded is not Rock Band 4!\n");
+        DoNotificationStatic("Game loaded is not Amp16!");
         return 0;
     }
     
-    if (strcmp(procInfo.version, "01.00") != 0) {
-        final_printf("This plugin is only compatible with Debug version 01.00 of Rock Band 4.\n");
+    if (strcmp(procInfo.version, "01.01") != 0) {
+        DoNotificationStatic("This plugin is only compatible with version 01.01 of Amplitude.");
         return 0;
     }
 
-    final_printf("Applying RB4DBG hooks...\n");
-    DoNotificationStatic("RB4DBG Plugin loaded!");
+    final_printf("Applying Amp16DX hooks...\n");
+    DoNotificationStatic("Amp16DX Plugin loaded!");
 
-    NewFile = (void*)(procInfo.base_address + 0x001e8990);
+    NewFile = (void*)(procInfo.base_address + 0x00253e30);
 
     // apply all hooks
     HOOK(NewFile);
