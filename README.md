@@ -7,7 +7,7 @@ GoldHEN Plugin used for loading AMP16DX files, heavily based on the RB4DX-Plugin
 ```ini
 ; Amplitude Deluxe Plugin
 [CUSA02480]
-/data/GoldHEN/plugins/AMPDX-Plugin.prx
+/data/GoldHEN/plugins/AMP16DX-Plugin.prx
 ```
 
 * Put processed files into `/data/GoldHEN/AMP16DX/ps4`

@@ -34,7 +34,7 @@ void DoNotificationStatic(const char* text) {
     Buffer.useIconImageUri = 1;
     Buffer.targetId = -1;
     strcpy(Buffer.message, text);
-    strcpy(Buffer.iconUri, "cxml://psnotification/tex_icon_system");
+    strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/rock-band-3-deluxe/100069d1c2293424a659ecb4a5ddacc3b91c4f9b/dependencies/media/dx.png");
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
@@ -48,7 +48,7 @@ void DoNotification(const char *FMT, ...) {
     Buffer.unk3 = 0;
     Buffer.useIconImageUri = 1;
     Buffer.targetId = -1;
-    strcpy(Buffer.iconUri, "cxml://psnotification/tex_icon_system");
+    strcpy(Buffer.iconUri, "https://raw.githubusercontent.com/hmxmilohax/rock-band-3-deluxe/100069d1c2293424a659ecb4a5ddacc3b91c4f9b/dependencies/media/dx.png");
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
@@ -100,23 +100,23 @@ void NewFile_hook(const char* path, FileMode mode) {
 int32_t attr_public module_start(size_t argc, const void *args)
 {
     if (sys_sdk_proc_info(&procInfo) != 0) {
-        DoNotificationStatic("Failed to get process info!");
+        final_printf("Failed to get process info!");
         return 0;
     }
 
     sys_sdk_proc_info(&procInfo);
     final_printf("Started plugin! Title ID: %s\n", procInfo.titleid);
     if (strcmp(procInfo.titleid, "CUSA02480") == 0) {
-        DoNotificationStatic("US Amp16 Detected!");
+        final_printf("US Amp16 Detected!");
         USTitleID = true;
     }
     else {
-        DoNotificationStatic("Game loaded is not Amp16!");
+        final_printf("Game loaded is not Amp16!");
         return 0;
     }
     
     if (strcmp(procInfo.version, "01.01") != 0) {
-        DoNotificationStatic("This plugin is only compatible with version 01.01 of Amplitude.");
+        DoNotificationStatic("This plugin is only compatible\n with version 01.01 of Amplitude.");
         return 0;
     }
 
