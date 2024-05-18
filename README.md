@@ -1,5 +1,5 @@
 # AMP16DX-Plugin
-GoldHEN Plugin used for loading AMP16DX flies, heavily based on the RB4DX-Plugin (1.0 debug fork)
+GoldHEN Plugin used for loading AMP16DX files, heavily based on the RB4DX-Plugin (1.0 debug fork)
 
 ## Usage
 
