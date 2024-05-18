@@ -110,6 +110,10 @@ int32_t attr_public module_start(size_t argc, const void *args)
         final_printf("US Amp16 Detected!");
         USTitleID = true;
     }
+    else if (strcmp(procInfo.titleid, "CUSA02670") == 0) {
+        final_printf("EU Amp16 Detected!");
+        USTitleID = false;
+    }
     else {
         final_printf("Game loaded is not Amp16!");
         return 0;
