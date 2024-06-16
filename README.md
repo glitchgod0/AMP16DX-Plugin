@@ -14,7 +14,7 @@ GoldHEN Plugin used for loading AMP16DX files, heavily based on the RB4DX-Plugin
 
 ## Extra Features
 
-* Make a file in `/data/GoldHEN/AMP16DX` called `writelog.ini`
+* Make a file in `/data/GoldHEN/AMP16DX` called `writelog.ini`.
 This will write the values of Symbol::Symbol to `/data/GoldHEN/Amp16SymbolLog.txt`
 
 ## Building
