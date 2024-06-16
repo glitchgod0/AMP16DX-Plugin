@@ -96,6 +96,37 @@ void NewFile_hook(const char* path, FileMode mode) {
     return;
 }
 
+
+void* (*SymbolSymbol)(const char*, const char*);
+
+HOOK_INIT(SymbolSymbol);
+
+void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {
+
+    //final_printf("symbol: %s\n", SymbolValue); Actual Danger to the ps4, shit log spams so much that you need a force shutdown
+    bool WriteLog = file_exists("/data/GoldHEN/AMP16DX/writelog.ini");
+    //final_printf("%d", WriteLog);
+    
+    if (WriteLog) {
+        FILE *fptr;
+        // Open a file in writing mode
+        fptr = fopen("/data/GoldHEN/Amp16SymbolLog.txt", "a");
+
+        // Write some text to the file
+        fprintf(fptr, "Symbol::Symbol Found!: %s\n", SymbolValue);
+
+        // Close the file
+        fclose(fptr); 
+        
+    }
+    
+    HOOK_CONTINUE(SymbolSymbol, void (*)(const char*, const char*), blankval, SymbolValue);
+    
+    return;
+}
+
+
+
 #define ADDR_OFFSET 0x00400000
 int32_t attr_public module_start(size_t argc, const void *args)
 {
@@ -127,10 +158,15 @@ int32_t attr_public module_start(size_t argc, const void *args)
     final_printf("Applying Amp16DX hooks...\n");
     DoNotificationStatic("Amp16DX Plugin loaded!");
 
+    remove("/data/GoldHEN/Amp16SymbolLog.txt");
+
     NewFile = (void*)(procInfo.base_address + 0x00253e30);
+    SymbolSymbol = (void*)(procInfo.base_address + 0x00573420);
 
     // apply all hooks
     HOOK(NewFile);
+    HOOK(SymbolSymbol);
+    final_printf("\n                            dP oo   dP                  dP\n                            88      88                  88\n.d888b. 88d8b.d8b. 88d888b. 88 dP d8888P dP    dP .d888b88 .d8888b.\n88\' `88 88\'`88\'`88 88\'  `88 88 88   88   88    88 88\'  `88 88ooood8\n88. .88 88  88  88 88.  .88 88 88   88   88.  .88 88.  .88 88.  ...\n`888P\'8 dP  dP  dP 88Y888P\' dP dP   dP   `88888P\' `88888P8 `88888P\'\n                   88\n                   dP\n");
 
     return 0;
 }
@@ -140,5 +176,6 @@ int32_t attr_public module_stop(size_t argc, const void *args)
     final_printf("Stopping plugin...\n");
     // unhook everything just in case
     UNHOOK(NewFile);
+    UNHOOK(SymbolSymbol);
     return 0;
 }
