@@ -104,21 +104,20 @@ HOOK_INIT(SymbolSymbol);
 void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {
 
     //final_printf("symbol: %s\n", SymbolValue); Actual Danger to the ps4, shit log spams so much that you need a force shutdown
-    bool WriteLog = file_exists("/data/GoldHEN/AMP16DX/writelog.ini");
     //final_printf("%d", WriteLog);
     
-    if (WriteLog) {
-        FILE *fptr;
-        // Open a file in writing mode
-        fptr = fopen("/data/GoldHEN/Amp16SymbolLog.txt", "a");
+    
+    FILE *fptr;
+    // Open a file in writing mode
+    fptr = fopen("/data/GoldHEN/Amp16SymbolLog.txt", "a");
 
-        // Write some text to the file
-        fprintf(fptr, "Symbol::Symbol Found!: %s\n", SymbolValue);
+    // Write some text to the file
+    fprintf(fptr, "Symbol::Symbol Found!: %s\n", SymbolValue);
 
-        // Close the file
-        fclose(fptr); 
+    // Close the file
+    fclose(fptr); 
         
-    }
+
     
     HOOK_CONTINUE(SymbolSymbol, void (*)(const char*, const char*), blankval, SymbolValue);
     
@@ -163,9 +162,14 @@ int32_t attr_public module_start(size_t argc, const void *args)
     NewFile = (void*)(procInfo.base_address + 0x00253e30);
     SymbolSymbol = (void*)(procInfo.base_address + 0x00573420);
 
+    bool WriteLog = file_exists("/data/GoldHEN/AMP16DX/writelog.ini");
+
     // apply all hooks
     HOOK(NewFile);
-    HOOK(SymbolSymbol);
+
+    if (WriteLog) {
+       HOOK(SymbolSymbol);
+    }
     final_printf("\n                            dP oo   dP                  dP\n                            88      88                  88\n.d888b. 88d8b.d8b. 88d888b. 88 dP d8888P dP    dP .d888b88 .d8888b.\n88\' `88 88\'`88\'`88 88\'  `88 88 88   88   88    88 88\'  `88 88ooood8\n88. .88 88  88  88 88.  .88 88 88   88   88.  .88 88.  .88 88.  ...\n`888P\'8 dP  dP  dP 88Y888P\' dP dP   dP   `88888P\' `88888P8 `88888P\'\n                   88\n                   dP\n");
 
     return 0;
