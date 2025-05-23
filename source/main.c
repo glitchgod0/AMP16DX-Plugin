@@ -73,6 +73,7 @@ typedef enum {
     kWrite = 0x4,
     kWriteNoBuffer = 0x5
 } FileMode;
+
 void* (*NewFile)(const char*, FileMode);
 HOOK_INIT(NewFile);
 void NewFile_hook(const char* path, FileMode mode) {
@@ -101,12 +102,7 @@ void* (*SymbolSymbol)(const char*, const char*);
 
 HOOK_INIT(SymbolSymbol);
 
-void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {
-
-    //final_printf("symbol: %s\n", SymbolValue); Actual Danger to the ps4, shit log spams so much that you need a force shutdown
-    //final_printf("%d", WriteLog);
-    
-    
+void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {    
     FILE *fptr;
     // Open a file in writing mode
     fptr = fopen("/data/GoldHEN/Amp16SymbolLog.txt", "a");
@@ -149,18 +145,19 @@ int32_t attr_public module_start(size_t argc, const void *args)
         return 0;
     }
     
-    if (strcmp(procInfo.version, "01.01") != 0) {
-        DoNotificationStatic("This plugin is only compatible\n with version 01.01 of Amplitude.");
-        return 0;
-    }
-
     final_printf("Applying Amp16DX hooks...\n");
     DoNotificationStatic("Amp16DX Plugin loaded!");
-
     remove("/data/GoldHEN/Amp16SymbolLog.txt");
 
-    NewFile = (void*)(procInfo.base_address + 0x00253e30);
-    SymbolSymbol = (void*)(procInfo.base_address + 0x00573420);
+    printf("Game Version: %s\n\n",procInfo.version);
+    if (strcmp(procInfo.version, "01.01") == 0) {   
+        NewFile = (void*)(procInfo.base_address + 0x00253e30);
+        SymbolSymbol = (void*)(procInfo.base_address + 0x00573420);
+    }
+    else {
+        NewFile = (void*)(procInfo.base_address + 0x00253530);
+        SymbolSymbol = (void*)(procInfo.base_address + 0x005727c0); 
+    }
 
     bool WriteLog = file_exists("/data/GoldHEN/AMP16DX/writelog.ini");
 
