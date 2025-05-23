@@ -1,5 +1,6 @@
 # AMP16DX-Plugin
-GoldHEN Plugin used for loading AMP16DX files, heavily based on the RB4DX-Plugin (1.0 debug fork)
+GoldHEN Plugin used for loading AMP16DX files, heavily based on the RB4DX-Plugin (1.0 debug fork).
+Supports v1.00 and v1.01 of Amlitude (2016).
 
 ## Usage
 
