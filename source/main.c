@@ -14,15 +14,12 @@
 
 #define GOLDHEN_PATH "/data/GoldHEN"
 #define RB4DX_PATH GOLDHEN_PATH "/AMP16DX"
-#define PLUGIN_CONFIG_PATH RB4DX_PATH "/AMP16DX.ini"
-#define PLUGIN_NAME "AMP16DX"
-#define final_printf(a, args...) klog("[" PLUGIN_NAME "] " a, ##args)
 
 #include <Common.h>
 #include <orbis/libkernel.h>
 #include <orbis/Sysmodule.h>
 #include <orbis/Pad.h>
-#include "ini.h"
+#include "plugin_common.h"
 
 attr_public const char *g_pluginName = PLUGIN_NAME;
 attr_public const char *g_pluginDesc = "Plugin for loading Amplitude (2016) Deluxe files.";
@@ -52,11 +49,6 @@ void DoNotification(const char *FMT, ...) {
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
-bool file_exists(const char* filename) {
-    struct stat buff;
-    return stat(filename, &buff) == 0 ? true : false;
-}
-
 static struct proc_info procInfo;
 
 // ARKless file loading hook
@@ -65,6 +57,7 @@ const char* GameRawfilesFolder = "data:/GoldHEN/AMP16DX/";
 bool USTitleID = true;
 bool PrintRawfiles = true;
 bool PrintArkfiles = false;
+
 typedef enum {
     kRead = 0x0,
     kReadNoArk = 0x1,
@@ -75,16 +68,18 @@ typedef enum {
 } FileMode;
 
 void* (*NewFile)(const char*, FileMode);
+
 HOOK_INIT(NewFile);
+
 void NewFile_hook(const char* path, FileMode mode) {
-    char rawpath[256];
-    strcpy(rawpath, RawfilesFolder);
+    char rawpath[2048] = {0};
+    strcat(rawpath, RawfilesFolder);
     /*if (rawpath[strlen(rawpath) - 1] != '/') {
         strcat(rawpath, "/");
     }*/
     strcat(rawpath, path);
-    char gamepath[256];
-    strcpy(gamepath, GameRawfilesFolder);
+    char gamepath[2048] = {0};
+    strcat(gamepath, GameRawfilesFolder);
     strcat(gamepath, path);
     const char* newpath = rawpath;
     if (file_exists(newpath)) {
@@ -120,53 +115,50 @@ void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {
     return;
 }
 
-
-
-#define ADDR_OFFSET 0x00400000
 int32_t attr_public module_start(size_t argc, const void *args)
 {
     if (sys_sdk_proc_info(&procInfo) != 0) {
-        final_printf("Failed to get process info!");
-        return 0;
+        final_printf("shadPS4? assuming we're 02.21\n");
+        // TODO: figure out version check and USTitleID check for shadPS4
+    } else {
+        final_printf("Started plugin! Title ID: %s\n", procInfo.titleid);
+        if (strcmp(procInfo.titleid, "CUSA02480") == 0) {
+            final_printf("US Amplitude Detected!\n");
+            USTitleID = true;
+        }
+        else if (strcmp(procInfo.titleid, "CUSA02670") == 0) {
+            final_printf("EU Amplitude Detected!\n");
+            USTitleID = false;
+        }
+        else {
+            final_printf("Game loaded is not Amplitude!\n");
+            return 0;
+        }
+        
+        if (strcmp(procInfo.version, "01.01") != 0) {
+            final_printf("This plugin is only compatible with version 02.21 of Amplitude.\n");
+            return 0;
+        }
     }
 
-    sys_sdk_proc_info(&procInfo);
-    final_printf("Started plugin! Title ID: %s\n", procInfo.titleid);
-    if (strcmp(procInfo.titleid, "CUSA02480") == 0) {
-        final_printf("US Amp16 Detected!");
-        USTitleID = true;
-    }
-    else if (strcmp(procInfo.titleid, "CUSA02670") == 0) {
-        final_printf("EU Amp16 Detected!");
-        USTitleID = false;
-    }
-    else {
-        final_printf("Game loaded is not Amp16!");
-        return 0;
-    }
+    uint64_t base_address = get_base_address();
     
     final_printf("Applying Amp16DX hooks...\n");
     DoNotificationStatic("Amp16DX Plugin loaded!");
     remove("/data/GoldHEN/Amp16SymbolLog.txt");
 
-    printf("Game Version: %s\n\n",procInfo.version);
-    if (strcmp(procInfo.version, "01.01") == 0) {   
-        NewFile = (void*)(procInfo.base_address + 0x00253e30);
-        SymbolSymbol = (void*)(procInfo.base_address + 0x00573420);
-    }
-    else {
-        NewFile = (void*)(procInfo.base_address + 0x00253530);
-        SymbolSymbol = (void*)(procInfo.base_address + 0x005727c0); 
-    }
+    NewFile = (void*)(base_address + 0x00253e30);
+    SymbolSymbol = (void*)(base_address + 0x00573420);
+    
+    // -- V1.0 Addresses
+    //     NewFile = (void*)(procInfo.base_address + 0x00253530);
+    //     SymbolSymbol = (void*)(procInfo.base_address + 0x005727c0); 
 
-    bool WriteLog = file_exists("/data/GoldHEN/AMP16DX/writelog.ini");
 
     // apply all hooks
     HOOK(NewFile);
 
-    if (WriteLog) {
-       HOOK(SymbolSymbol);
-    }
+
     final_printf("\n                            dP oo   dP                  dP\n                            88      88                  88\n.d888b. 88d8b.d8b. 88d888b. 88 dP d8888P dP    dP .d888b88 .d8888b.\n88\' `88 88\'`88\'`88 88\'  `88 88 88   88   88    88 88\'  `88 88ooood8\n88. .88 88  88  88 88.  .88 88 88   88   88.  .88 88.  .88 88.  ...\n`888P\'8 dP  dP  dP 88Y888P\' dP dP   dP   `88888P\' `88888P8 `88888P\'\n                   88\n                   dP\n");
 
     return 0;

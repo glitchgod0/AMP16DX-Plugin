@@ -1,34 +1,44 @@
-#include "plugin_common.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <stdbool.h>
 #include <Common.h>
+#include "plugin_common.h"
 
-// Thanks to OSM
-// https://github.com/OSM-Made/PS4-Notify/blob/c6d259bc5bd4aa519f5b0ce4f5e27ef7cb01ffdd/Notify.cpp
+static uint64_t base_address = 0;
 
-// For pre formatted strings
-void NotifyStatic(const char* IconUri, const char* text) {
-    OrbisNotificationRequest Buffer;
-    final_printf("Notify text:\n%s\n", text);
-    Buffer.type = NotificationRequest;
-    Buffer.unk3 = 0;
-    Buffer.useIconImageUri = 1;
-    Buffer.targetId = -1;
-    strcpy(Buffer.message, text);
-    strcpy(Buffer.iconUri, IconUri);
-    sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
+// shadPS4 base address (old)
+//#define SHADPS4_BASE 0x8ffffc000
+
+// shadPS4 base address (new)
+#define SHADPS4_BASE 0x800000000 
+
+uint64_t get_base_address() {
+    if (base_address != 0) {
+        return base_address;
+    }
+    if (sys_sdk_proc_info(&procInfo) != 0) {
+        // syscall failed, probably shadPS4
+        base_address = SHADPS4_BASE;
+    } else {
+        base_address = procInfo.base_address;
+    }
+    return base_address;
 }
 
-// For formatted strings
-void Notify(const char* IconUri, const char *FMT, ...) {
-    OrbisNotificationRequest Buffer;
-    va_list args;
-    va_start(args, FMT);
-    vsprintf(Buffer.message, FMT, args);
-    va_end(args);
-    final_printf("Notify message:\n%s\n", Buffer.message);
-    Buffer.type = NotificationRequest;
-    Buffer.unk3 = 0;
-    Buffer.useIconImageUri = 1;
-    Buffer.targetId = -1;
-    strcpy(Buffer.iconUri, IconUri);
-    sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
+bool file_exists(const char* filename) {
+    struct stat buff;
+    return stat(filename, &buff) == 0 ? true : false;
+}
+
+float read_file_as_float(const char* filename) {
+    float out;
+    FILE* fptr;
+    fptr = fopen(filename, "r"); 
+    char string[100];
+    fgets(string, 100, fptr);
+    const char* stringptr = string;
+    out = atof(stringptr);
+    fclose(fptr);
+    return out;
 }
