@@ -49,12 +49,12 @@ void DoNotification(const char *FMT, ...) {
     sceKernelSendNotificationRequest(0, &Buffer, sizeof(Buffer), 0);
 }
 
-static struct proc_info procInfo;
+
+bool USTitleID = true;
 
 // ARKless file loading hook
 const char* RawfilesFolder = "/data/GoldHEN/AMP16DX/";
 const char* GameRawfilesFolder = "data:/GoldHEN/AMP16DX/";
-bool USTitleID = true;
 bool PrintRawfiles = true;
 bool PrintArkfiles = false;
 
@@ -93,32 +93,10 @@ void NewFile_hook(const char* path, FileMode mode) {
 }
 
 
-void* (*SymbolSymbol)(const char*, const char*);
-
-HOOK_INIT(SymbolSymbol);
-
-void SymbolSymbol_hook(const char* blankval, const char* SymbolValue) {    
-    FILE *fptr;
-    // Open a file in writing mode
-    fptr = fopen("/data/GoldHEN/Amp16SymbolLog.txt", "a");
-
-    // Write some text to the file
-    fprintf(fptr, "Symbol::Symbol Found!: %s\n", SymbolValue);
-
-    // Close the file
-    fclose(fptr); 
-        
-
-    
-    HOOK_CONTINUE(SymbolSymbol, void (*)(const char*, const char*), blankval, SymbolValue);
-    
-    return;
-}
-
 int32_t attr_public module_start(size_t argc, const void *args)
 {
     if (sys_sdk_proc_info(&procInfo) != 0) {
-        final_printf("shadPS4? assuming we're 02.21\n");
+        final_printf("shadPS4? assuming we're 01.01\n");
         // TODO: figure out version check and USTitleID check for shadPS4
     } else {
         final_printf("Started plugin! Title ID: %s\n", procInfo.titleid);
@@ -145,10 +123,8 @@ int32_t attr_public module_start(size_t argc, const void *args)
     
     final_printf("Applying Amp16DX hooks...\n");
     DoNotificationStatic("Amp16DX Plugin loaded!");
-    remove("/data/GoldHEN/Amp16SymbolLog.txt");
 
     NewFile = (void*)(base_address + 0x00253e30);
-    SymbolSymbol = (void*)(base_address + 0x00573420);
     
     // -- V1.0 Addresses
     //     NewFile = (void*)(procInfo.base_address + 0x00253530);
@@ -169,6 +145,5 @@ int32_t attr_public module_stop(size_t argc, const void *args)
     final_printf("Stopping plugin...\n");
     // unhook everything just in case
     UNHOOK(NewFile);
-    UNHOOK(SymbolSymbol);
     return 0;
 }
